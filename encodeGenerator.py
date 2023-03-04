@@ -2,10 +2,21 @@ import cv2
 import os
 import face_recognition
 import pickle
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import db
+from firebase_admin import storage
+
+# firebase creds
+cred = credentials.Certificate("key.json")
+firebase_admin.initialize_app(cred,{
+  "databaseURL":'https://classcapture-1362b-default-rtdb.firebaseio.com/',
+  "storageBucket":'classcapture-1362b.appspot.com'
+})
 
 # importing students images
-folderPath = 'Images'
-imgPathList = os.listdir(folderPath)
+imageFolderPath = 'Images'
+imgPathList = os.listdir(imageFolderPath)
 # for storing student images
 imgList = []
 # for storing student IDs
@@ -15,10 +26,16 @@ studentIDs = []  # we will get it from image names (Id.png)
 # storing student IDs and student images
 # --------------------------------------------
 for path in imgPathList:
-    imgList.append(cv2.imread(os.path.join(folderPath,path)))
+    imgList.append(cv2.imread(os.path.join(imageFolderPath,path)))
     # print(path)
     # --- splitting the path and storing ids in the list ---
     studentIDs.append(os.path.splitext(path)[0])
+    
+    # sending images to firebase database
+    fileName = f'{imageFolderPath}/{path}'
+    bucket = storage.bucket()
+    blob = bucket.blob(fileName)
+    blob.upload_from_filename(fileName )
 
 # finding encodings
 def findEncodes(imagesList):
@@ -39,4 +56,4 @@ print('encodings completed')
 file = open('encodeFile.p','wb')
 pickle.dump(encodingsWithIDs,file)
 file.close()
-print("file saved  ")
+print("file saved..")
